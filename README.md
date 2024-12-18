@@ -18,12 +18,8 @@ To me, it's supposed to be a simple alternative for when eyes are tired but the 
 
 # How to use
  1. Clone this repo
- 2. Build the image for the dependency:
- ```
- docker build -t epub-parser ./parser
- ```
- 3. Replace the file inside `volume/input.epub` with the book you want to convert to audio (keep file name)
- 4. Execute the program (note that it will take quite some time, but you should see _some_ output during execution):
+ 2. Replace the file inside `volume/input.epub` with the book you want to convert to audio (keep file name)
+ 3. Execute the program (note that it will take quite some time, but you should see _some_ output during execution):
 ```
 go run .
 ```
@@ -34,7 +30,7 @@ go run .
  - [ ] Reduce output audio size
  - [ ] Remove duplicated information in each chapter (eg book title)
  - [ ] Enhance information retrieval
- - [ ] Find a Golang epub parser
+ - [x] Find a Golang epub parser
  - [ ] Make it fully run inside the container
  - [ ] Add Web UI to Drag and Drop epub files
  - [ ] Add TTS progress (look into `say` progress)
@@ -43,7 +39,6 @@ go run .
  - [ ] ?
 
 ### Dependencies
- - Uses [gaoxiaoliangz/epub-parser](https://github.com/gaoxiaoliangz/epub-parser) (for now, simplest parser that worked how I wanted)
  - MacOS `say` command
  - Note: The example book in this repo is taken from [Project Guttenber](https://www.gutenberg.org/about/), with Copyright Status as "Public domain in the USA"
 <hr>

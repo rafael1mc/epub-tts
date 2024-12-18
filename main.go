@@ -13,11 +13,6 @@ import (
 	"unicode"
 )
 
-type EpubSection struct {
-	ID          string `json:"id"`
-	HtmlContent string `json:"htmlString"`
-}
-
 type Chapter struct {
 	Name    string
 	Content string
@@ -31,34 +26,17 @@ const (
 )
 
 func main() {
-	fmt.Println(" ---== Execution started ==--- ")
-
-	createOutputDir(outputFolderName)
-	epubSections := parseEpub()
-	generateDebugFiles(epubSections)
-	chapters := epubSectionsToCharters(epubSections)
-	saveChaptersText(chapters)
-	ttsChapters(chapters)
-
-	fmt.Println(" ---== Execution ended ==--- ")
-}
-
-func parseEpub() []EpubSection {
-	fmt.Println("Parsing epub")
-	cmdStr := "docker run --rm -v ./volume:/app/input epub-parser input.epub"
-	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
-
-	result := []EpubSection{}
-	err := json.Unmarshal(out, &result)
+	book, err := parseEpub("volume/input.epub")
 	if err != nil {
 		panic(err)
 	}
 
-	if isDebug {
-		writeFile(getOutputPath(0, "___debug_secions", "json"), string(out))
-	}
+	generateDebugFiles(book.Sections)
+	chapters := epubSectionsToCharters(book.Sections)
+	saveChaptersText(chapters)
+	ttsChapters(chapters)
 
-	return result
+	fmt.Println(" ---== Execution ended ==--- ")
 }
 
 func epubSectionsToCharters(sections []EpubSection) []Chapter {
