@@ -27,7 +27,7 @@ const (
 	perm             = 0777
 	outputFolderName = "output"
 	isDryRun         = false // if true, will generate text files, but not audio files
-	isDebug          = false // if true, will generate files for json and html content as well
+	isDebug          = false // if true, will generate files for section json and html content as well
 )
 
 func main() {

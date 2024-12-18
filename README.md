@@ -1,16 +1,18 @@
 # epub-tts
 
-Create audio files from ePUB.
+Convert ePUB into audio files.
+
+Code will parse the ePUB into sections (which roughly correlates to book chapters) and 'text-to-speech' each section into its own audio file.<br>Output will be prefixed with a number to maintain order.
 
 <sub>
 This is an alpha, proof of concept version.
-To me, it's supposed to be a simple alternative for when eyes are tired but the mind is not.
+To me, it's supposed to be a simple alternative for when eyes are tired but the mind is not :)
 </sub>
 
 <br>
 
 # Requirements
- - MacOS
+ - Run on MacOS
  - Docker
  - Golang
 
