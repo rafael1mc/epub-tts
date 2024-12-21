@@ -13,7 +13,6 @@ To me, it's supposed to be a simple alternative for when eyes are tired but the 
 
 # Requirements
  - Run on MacOS
- - Docker
  - Golang
 
 # How to use
@@ -26,16 +25,14 @@ go run .
  5. You should see a new `output` folder with each text and audio file.
 
 # TODO
- - [ ] Add support for Ubuntu TTS
+ - [x] Parse ePUB from Golang
+ - [ ] Organize code a little more
+ - [ ] Add worker pools for batch conversion and less CPU strain
  - [ ] Reduce output audio size
- - [ ] Remove duplicated information in each chapter (eg book title)
- - [ ] Enhance information retrieval
- - [x] Find a Golang epub parser
- - [ ] Make it fully run inside the container
+ - [ ] Support other languages beyond english
+ - [ ] Display progress
+ - [ ] Add support for Ubuntu TTS
  - [ ] Add Web UI to Drag and Drop epub files
- - [ ] Add TTS progress (look into `say` progress)
- - [ ] Support other languages
- - [ ] Organize code a little
  - [ ] ?
 
 ### Dependencies
