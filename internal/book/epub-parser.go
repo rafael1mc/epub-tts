@@ -1,4 +1,4 @@
-package main
+package book
 
 import (
 	"archive/zip"
@@ -36,19 +36,7 @@ type Itemref struct {
 	IDRef string `xml:"idref,attr"`
 }
 
-type Epub struct {
-	Sections []EpubSection
-}
-
-type EpubSection struct {
-	ID          string `json:"id"`
-	HtmlContent string `json:"htmlString"`
-}
-
-func parseEpub(epubPath string) (Epub, error) {
-	// Path to the ePUB file
-	// epubPath := "volume/input.epub"
-
+func ParseEpub(epubPath string) (Epub, error) {
 	// Open the ePUB file as a zip archive
 	r, err := zip.OpenReader(epubPath)
 	if err != nil {

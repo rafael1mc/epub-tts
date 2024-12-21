@@ -26,8 +26,8 @@ go run .
 
 # TODO
  - [x] Parse ePUB from Golang
- - [ ] Organize code a little more
- - [ ] Add worker pools for batch conversion and less CPU strain
+ - [x] Organize code a little more
+ - [x] Add worker pools for batch conversion and less CPU strain
  - [ ] Reduce output audio size
  - [ ] Support other languages beyond english
  - [ ] Display progress
