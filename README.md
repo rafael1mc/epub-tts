@@ -13,6 +13,7 @@ To me, it's supposed to be a simple alternative for when eyes are tired but the 
 
 # Requirements
  - Run on MacOS
+ - ffmpeg installed and available in $PATH
  - Golang
 
 # How to use
