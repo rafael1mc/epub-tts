@@ -40,8 +40,12 @@ func GetTextfileName(pos int, chapter book.Chapter) string {
 	return GetOutputPath(pos, consts.OutputFolderName, chapter.Name, "txt")
 }
 
-func GetAudioFilename(pos int, chapter book.Chapter) string {
-	return GetOutputPath(pos, consts.OutputFolderName, chapter.Name, "aiff")
+func GetTtsAudioFilename(pos int, chapter book.Chapter) string {
+	return GetOutputPath(pos, consts.TmpOutputFolderName, chapter.Name, "aiff")
+}
+
+func GetConvertedAudioFilename(pos int, chapter book.Chapter) string {
+	return GetOutputPath(pos, consts.OutputFolderName, chapter.Name, "mp3")
 }
 
 func GetOutputPath(pos int, outputFolder string, name string, extension string) string {
