@@ -12,7 +12,7 @@ import (
 func main() {
 	fmt.Println(" ---== Execution Started ==--- ")
 
-	err := file.CreateOutputDir(consts.TmpOutputFolderName)
+	err := file.CreateOutputDirs()
 	if err != nil {
 		panic(err)
 	}

@@ -11,8 +11,13 @@ import (
 	"strings"
 )
 
-func CreateOutputDir(folderName string) error {
-	err := os.MkdirAll(folderName, consts.Perm)
+func CreateOutputDirs() error {
+	err := os.MkdirAll(consts.TmpOutputFolderName, consts.Perm)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		return err
+	}
+
+	err = os.MkdirAll(consts.TxtOutputFolderName, consts.Perm)
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		return err
 	}
@@ -38,7 +43,7 @@ func SaveChapters(textBook book.TextBook) error {
 }
 
 func GetTextfileName(pos int, chapter book.Chapter) string {
-	return GetOutputPath(pos, consts.OutputFolderName, chapter.NameOrID(), "txt")
+	return GetOutputPath(pos, consts.TxtOutputFolderName, chapter.NameOrID(), "txt")
 }
 
 func GetTtsAudioFilename(pos int, chapter book.Chapter) string {
