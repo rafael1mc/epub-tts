@@ -83,7 +83,7 @@ func (t TTS) launchWorker(id int, inputChan <-chan job, doneChan chan<- *jobErro
 func ttsChapter(pos int, chapter book.Chapter) string {
 	audioName := file.GetTtsAudioFilename(pos, chapter)
 
-	fmt.Println("Narrating chapter: '" + audioName + "'")
+	fmt.Println("🎤 Narrating chapter: '" + audioName + "' 🎤")
 	cmdStr := fmt.Sprintf(`say -f "%s" -o "%s"`, file.GetTextfileName(pos, chapter), audioName)
 	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
 
@@ -94,10 +94,10 @@ func audioConvert(pos int, chapter book.Chapter) string {
 	ttsAudioName := file.GetTtsAudioFilename(pos, chapter)
 	convertedAudioName := file.GetConvertedAudioFilename(pos, chapter)
 
-	fmt.Println("Converting chapter: '" + ttsAudioName + "'")
+	fmt.Println("🔄 Converting chapter: '" + ttsAudioName + "' 🔄")
 	cmdStr := fmt.Sprintf(`ffmpeg -y -i %s %s`, ttsAudioName, convertedAudioName)
 	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
 
-	fmt.Println("Chapter '" + convertedAudioName + "' converted")
+	fmt.Println("✅ Chapter '" + convertedAudioName + "' converted ✅")
 	return string(out)
 }
