@@ -3,6 +3,7 @@ package file
 import (
 	"epub-tts/internal/book"
 	"epub-tts/internal/consts"
+	"epub-tts/internal/str"
 	"errors"
 	"fmt"
 	"os"
@@ -37,22 +38,21 @@ func SaveChapters(textBook book.TextBook) error {
 }
 
 func GetTextfileName(pos int, chapter book.Chapter) string {
-	return GetOutputPath(pos, consts.OutputFolderName, chapter.Name, "txt")
+	return GetOutputPath(pos, consts.OutputFolderName, chapter.NameOrID(), "txt")
 }
 
 func GetTtsAudioFilename(pos int, chapter book.Chapter) string {
-	return GetOutputPath(pos, consts.TmpOutputFolderName, chapter.Name, "aiff")
+	return GetOutputPath(pos, consts.TmpOutputFolderName, chapter.NameOrID(), "aiff")
 }
 
 func GetConvertedAudioFilename(pos int, chapter book.Chapter) string {
-	return GetOutputPath(pos, consts.OutputFolderName, chapter.Name, "mp3")
+	return GetOutputPath(pos, consts.OutputFolderName, chapter.NameOrID(), "mp3")
 }
 
 func GetOutputPath(pos int, outputFolder string, name string, extension string) string {
-	filename := fmt.Sprintf("%d.%s.%s", pos, name, extension)
-	filename = strings.ReplaceAll(filename, " ", "-")
-	filename = strings.ReplaceAll(filename, " ", "-")
+	filename := fmt.Sprintf("%d-%s.%s", pos, name, extension)
 	filename = strings.ToLower(filename)
+	filename = str.CleanFileName(filename)
 
 	filePath := filepath.Join(outputFolder, filename)
 

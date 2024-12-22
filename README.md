@@ -27,9 +27,14 @@ go run .
 
 # TODO
  - [x] Parse ePUB from Golang
- - [x] Organize code a little more
+ - [x] Organize code
  - [x] Add worker pools for batch conversion and less CPU strain
- - [ ] Reduce output audio size
+ - [x] Reduce output audio size
+ - [x] Extract chapter info
+ - [ ] Add more sample ePUBs
+ - [ ] Add automated tests
+ - [ ] Add multiple input (separate output by folder same name as input file)
+ - [ ] Organize the code some more
  - [ ] Support other languages beyond english
  - [ ] Display progress
  - [ ] Add support for Ubuntu TTS
