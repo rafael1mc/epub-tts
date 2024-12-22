@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net/url"
 	"path/filepath"
 	"strings"
 )
@@ -36,6 +37,38 @@ type Itemref struct {
 	IDRef string `xml:"idref,attr"`
 }
 
+// NavPoint represents a navigation point in the EPUB toc.ncx file
+type NavPoint struct {
+	Text string `xml:"navLabel>text"`
+	// Src  string `xml:"content>src,attr"` // this doesn;t work
+	Src          string     `xml:"content,attr"`
+	SubNavPoints []NavPoint `xml:"navPoint"`
+}
+
+func (n *NavPoint) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
+	var aux struct {
+		Text    string `xml:"navLabel>text"`
+		Content struct {
+			Src string `xml:"src,attr"`
+		} `xml:"content"`
+		SubNavPoints []NavPoint `xml:"navPoint"`
+	}
+	if err := d.DecodeElement(&aux, &start); err != nil {
+		return err
+	}
+
+	n.Text = aux.Text
+	n.Src = aux.Content.Src
+	n.SubNavPoints = aux.SubNavPoints
+
+	return nil
+}
+
+// NCX represents the structure of the toc.ncx file
+type NCX struct {
+	NavMap []NavPoint `xml:"navMap>navPoint"`
+}
+
 func ParseEpub(epubPath string) (Epub, error) {
 	// Open the ePUB file as a zip archive
 	r, err := zip.OpenReader(epubPath)
@@ -57,8 +90,16 @@ func ParseEpub(epubPath string) (Epub, error) {
 	}
 
 	basePath := extractBasePath(container.Rootfiles[0].FullPath)
+	tocFileName := findTocFileName(packageData.Manifest)
+
+	// Parse table of contents
+	tableOfContents, err := extractTableOfContents(r, basePath, tocFileName)
+	if err != nil {
+		fmt.Println("Failed to parse table of contents", err)
+	}
 
 	book := Epub{
+		Toc:      map[string]string{},
 		Sections: []EpubSection{},
 	}
 
@@ -66,13 +107,20 @@ func ParseEpub(epubPath string) (Epub, error) {
 	for _, spineItem := range packageData.Spine {
 		manifestItem := findManifestItem(packageData.Manifest, spineItem.IDRef)
 		if manifestItem != nil {
-			content, err := readFileFromZip(r, filepath.Join(basePath, manifestItem.Href))
+			currFile := filepath.Join(basePath, manifestItem.Href)
+			content, err := readFileFromZip(r, currFile)
 			if err != nil {
 				return Epub{}, err
 			}
 
+			title := tableOfContents[manifestItem.Href]
+			if title == "" {
+				title = tableOfContents[currFile]
+			}
+
 			book.Sections = append(book.Sections, EpubSection{
 				ID:          manifestItem.ID,
+				Title:       title,
 				HtmlContent: string(content),
 			})
 		}
@@ -128,6 +176,59 @@ func readFileFromZip(r *zip.ReadCloser, name string) ([]byte, error) {
 	return nil, fmt.Errorf("file not found: %s", name)
 }
 
+func extractTableOfContents(
+	r *zip.ReadCloser,
+	basePath string,
+	tocFileName string,
+) (map[string]string, error) {
+	navPoints, err := parseNCX(r, basePath, tocFileName)
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]string{}
+	addNavPoints(result, navPoints)
+
+	return result, nil
+}
+
+func addNavPoints(m map[string]string, navPoints []NavPoint) {
+	for _, v := range navPoints {
+		parsedSrc, err := url.Parse(v.Src)
+		if err != nil {
+			// TODO: log
+			m[v.Src] = v.Text
+			continue
+		}
+
+		parsedSrc.Fragment = ""
+		parsedSrc.RawQuery = ""
+		src := parsedSrc.String()
+
+		m[src] = v.Text
+
+		if len(v.SubNavPoints) > 0 {
+			addNavPoints(m, v.SubNavPoints)
+		}
+	}
+}
+
+func parseNCX(r *zip.ReadCloser, basePath string, tocFileName string) ([]NavPoint, error) {
+	ncxContent, err := readFileFromZip(r, filepath.Join(basePath, tocFileName))
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the NCX XML
+	var ncx NCX
+	err = xml.Unmarshal(ncxContent, &ncx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse XML: %w", err)
+	}
+
+	return ncx.NavMap, nil
+}
+
 // findManifestItem finds a manifest item by ID
 func findManifestItem(manifest []Item, id string) *Item {
 	for _, item := range manifest {
@@ -147,4 +248,15 @@ func extractBasePath(fullPath string) string {
 	}
 
 	return fullPathBase
+}
+
+func findTocFileName(manifestItems []Item) string {
+	for _, v := range manifestItems {
+		if strings.Contains(v.ID, "ncx") &&
+			strings.Contains(v.Href, "ncx") {
+			return v.Href
+		}
+	}
+
+	return "toc.ncx" // TODO look for any ncx file inside the whole zip
 }

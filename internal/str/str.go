@@ -4,6 +4,10 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 func SanitizeString(str string) string {
@@ -27,6 +31,43 @@ func SanitizeString(str string) string {
 	}
 
 	return str
+}
+
+// CleanFileName removes invalid characters for filenames
+// and also removes accents and special characters.
+func CleanFileName(input string) string {
+	// Normalize the input string to remove accents
+	normalized, err := normalize(input)
+	if err != nil {
+		// TODO add log
+		normalized = input
+	}
+
+	normalized = strings.ReplaceAll(normalized, "—", "_")
+
+	// Define a regular expression that allows only alphanumeric characters, dashes, and underscores
+	re := regexp.MustCompile(`[^a-zA-Z0-9\s\-_\.]`)
+
+	// Remove any character that is not a word character, whitespace, dash, or period
+	cleaned := re.ReplaceAllString(normalized, "")
+
+	// Optionally replace spaces with underscores or dashes
+	cleaned = strings.ReplaceAll(cleaned, " ", "_")
+	cleaned = strings.ReplaceAll(cleaned, `\n`, "")
+	cleaned = strings.ReplaceAll(cleaned, "\n", "")
+
+	return cleaned
+}
+
+// https://stackoverflow.com/a/65981868
+func normalize(s string) (string, error) {
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
+	result, _, err := transform.String(t, s)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
 
 func RemoveTags(input string) string {
