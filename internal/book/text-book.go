@@ -19,6 +19,7 @@ func (c Chapter) NameOrID() string {
 }
 
 type TextBook struct {
+	Name     string
 	Chapters []Chapter
 }
 
@@ -37,6 +38,7 @@ func TextBookFromEpub(input Epub) TextBook {
 	}
 
 	return TextBook{
+		Name:     input.Name,
 		Chapters: chapters,
 	}
 }

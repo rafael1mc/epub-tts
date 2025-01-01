@@ -12,11 +12,6 @@ import (
 func main() {
 	fmt.Println(" ---== Execution Started ==--- ")
 
-	err := file.CreateOutputDirs()
-	if err != nil {
-		panic(err)
-	}
-
 	epub, err := book.ParseEpub(consts.InputFilePath)
 	if err != nil {
 		panic(err)
@@ -24,13 +19,18 @@ func main() {
 
 	textBook := book.TextBookFromEpub(epub)
 
+	err = file.CreateOutputDirs(textBook.Name)
+	if err != nil {
+		panic(err)
+	}
+
 	err = file.SaveChapters(textBook)
 	if err != nil {
 		panic(err)
 	}
 	debug.GenerateDebugFiles(epub)
 
-	tts := tts.NewTTS(3, textBook)
+	tts := tts.NewTTS(5, textBook)
 	tts.Run()
 
 	if consts.SpeakProcessCompletion {

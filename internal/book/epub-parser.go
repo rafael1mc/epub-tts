@@ -66,6 +66,7 @@ func (n *NavPoint) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 
 // NCX represents the structure of the toc.ncx file
 type NCX struct {
+	Title  string     `xml:"docTitle>text"`
 	NavMap []NavPoint `xml:"navMap>navPoint"`
 }
 
@@ -92,13 +93,19 @@ func ParseEpub(epubPath string) (Epub, error) {
 	basePath := extractBasePath(container.Rootfiles[0].FullPath)
 	tocFileName := findTocFileName(packageData.Manifest)
 
+	ncx, err := parseNCX(r, basePath, tocFileName)
+	if err != nil {
+		fmt.Println("Failed to parse ncx file")
+	}
+
 	// Parse table of contents
-	tableOfContents, err := extractTableOfContents(r, basePath, tocFileName)
+	tableOfContents, err := extractTableOfContents(ncx)
 	if err != nil {
 		fmt.Println("Failed to parse table of contents", err)
 	}
 
 	book := Epub{
+		Name:     ncx.Title,
 		Toc:      map[string]string{},
 		Sections: []EpubSection{},
 	}
@@ -177,17 +184,10 @@ func readFileFromZip(r *zip.ReadCloser, name string) ([]byte, error) {
 }
 
 func extractTableOfContents(
-	r *zip.ReadCloser,
-	basePath string,
-	tocFileName string,
+	ncx *NCX,
 ) (map[string]string, error) {
-	navPoints, err := parseNCX(r, basePath, tocFileName)
-	if err != nil {
-		return nil, err
-	}
-
 	result := map[string]string{}
-	addNavPoints(result, navPoints)
+	addNavPoints(result, ncx.NavMap)
 
 	return result, nil
 }
@@ -213,7 +213,7 @@ func addNavPoints(m map[string]string, navPoints []NavPoint) {
 	}
 }
 
-func parseNCX(r *zip.ReadCloser, basePath string, tocFileName string) ([]NavPoint, error) {
+func parseNCX(r *zip.ReadCloser, basePath string, tocFileName string) (*NCX, error) {
 	ncxContent, err := readFileFromZip(r, filepath.Join(basePath, tocFileName))
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func parseNCX(r *zip.ReadCloser, basePath string, tocFileName string) ([]NavPoin
 		return nil, fmt.Errorf("failed to parse XML: %w", err)
 	}
 
-	return ncx.NavMap, nil
+	return &ncx, nil
 }
 
 // findManifestItem finds a manifest item by ID

@@ -44,6 +44,7 @@ func CleanFileName(input string) string {
 	}
 
 	normalized = strings.ReplaceAll(normalized, "—", "_")
+	normalized = strings.ReplaceAll(normalized, ":", "_")
 
 	// Define a regular expression that allows only alphanumeric characters, dashes, and underscores
 	re := regexp.MustCompile(`[^a-zA-Z0-9\s\-_\.]`)

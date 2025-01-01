@@ -16,11 +16,12 @@ type TTS struct {
 }
 
 type job struct {
-	ID      int
-	Chapter book.Chapter
+	ID       int
+	BookName string
+	Chapter  book.Chapter
 }
 
-type jobError struct {
+type jobDone struct {
 	job
 	Error error
 }
@@ -40,23 +41,23 @@ func (t TTS) Run() {
 
 	jobCount := len(t.textBook.Chapters)
 	jobInputChan := make(chan job, jobCount)
-	jobDoneChan := make(chan *jobError, jobCount)
+	jobDoneChan := make(chan jobDone, jobCount)
 
 	t.launchWorkers(jobInputChan, jobDoneChan)
 
 	for k, v := range t.textBook.Chapters {
-		jobInputChan <- job{ID: k, Chapter: v}
+		jobInputChan <- job{ID: k, BookName: t.textBook.Name, Chapter: v}
 	}
 	close(jobInputChan)
 
 	for range jobCount {
-		jobErr := <-jobDoneChan
-		if jobErr != nil {
-			fmt.Println("Failed to process item", jobErr.Chapter.Name, "with error", jobErr.Error)
+		jobDone := <-jobDoneChan
+		if jobDone.Error != nil {
+			fmt.Println("Failed to process item", jobDone.Chapter.Name, "with error", jobDone.Error)
 		}
 	}
 
-	os.RemoveAll(consts.TmpOutputFolderName)
+	os.RemoveAll(file.TmpDir(t.textBook.Name))
 }
 
 func (t TTS) Speak(text string) {
@@ -64,40 +65,40 @@ func (t TTS) Speak(text string) {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 }
 
-func (t TTS) launchWorkers(jobInputChan <-chan job, jobDoneChan chan<- *jobError) {
+func (t TTS) launchWorkers(jobInputChan <-chan job, jobDoneChan chan<- jobDone) {
 	fmt.Println("Launching", t.workerCount, "worker(s)")
 	for k := range t.workerCount {
 		go t.launchWorker(k, jobInputChan, jobDoneChan)
 	}
 }
 
-func (t TTS) launchWorker(id int, inputChan <-chan job, doneChan chan<- *jobError) {
+func (t TTS) launchWorker(id int, inputChan <-chan job, doneChan chan<- jobDone) {
 	// TODO: use worker id and doneChan with error
 	for i := range inputChan {
 		if consts.IsDryRun {
-			doneChan <- nil
+			doneChan <- jobDone{job: i}
 			continue
 		}
 
-		_ = ttsChapter(i.ID, i.Chapter)
-		audioConvert(i.ID, i.Chapter)
-		doneChan <- nil
+		_ = ttsChapter(i.ID, i.BookName, i.Chapter)
+		audioConvert(i.ID, i.BookName, i.Chapter)
+		doneChan <- jobDone{job: i} // not sending errors yet
 	}
 }
 
-func ttsChapter(pos int, chapter book.Chapter) string {
-	audioName := file.GetTtsAudioFilename(pos, chapter)
+func ttsChapter(pos int, bookName string, chapter book.Chapter) string {
+	audioName := file.GetTtsAudioFilename(pos, bookName, chapter)
 
 	fmt.Println("🎤 Narrating chapter: '" + audioName + "' 🎤")
-	cmdStr := fmt.Sprintf(`say -f "%s" -o "%s"`, file.GetTextfileName(pos, chapter), audioName)
+	cmdStr := fmt.Sprintf(`say -f "%s" -o "%s"`, file.GetTextfileName(pos, bookName, chapter), audioName)
 	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
 
 	return string(out)
 }
 
-func audioConvert(pos int, chapter book.Chapter) string {
-	ttsAudioName := file.GetTtsAudioFilename(pos, chapter)
-	convertedAudioName := file.GetConvertedAudioFilename(pos, chapter)
+func audioConvert(pos int, bookName string, chapter book.Chapter) string {
+	ttsAudioName := file.GetTtsAudioFilename(pos, bookName, chapter)
+	convertedAudioName := file.GetConvertedAudioFilename(pos, bookName, chapter)
 
 	fmt.Println("🔄 Converting chapter: '" + ttsAudioName + "' 🔄")
 	cmdStr := fmt.Sprintf(`ffmpeg -y -i %s %s`, ttsAudioName, convertedAudioName)

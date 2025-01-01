@@ -5,6 +5,7 @@ import (
 	"epub-tts/internal/book"
 	"epub-tts/internal/consts"
 	"epub-tts/internal/file"
+	"errors"
 	"fmt"
 	"os"
 )
@@ -14,6 +15,11 @@ func GenerateDebugFiles(epub book.Epub) {
 		return
 	}
 	fmt.Println("Saving debug files")
+
+	err := os.MkdirAll(file.DebugDir(epub.Name), consts.Perm)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		panic(err)
+	}
 
 	for k, v := range epub.Sections {
 		//
@@ -25,7 +31,7 @@ func GenerateDebugFiles(epub book.Epub) {
 		}
 
 		err = os.WriteFile(
-			file.GetOutputPath(k, consts.OutputFolderName, v.ID, "json"),
+			file.GetOutputPath(k, file.DebugDir(epub.Name), v.ID, "json"),
 			jsonContent,
 			consts.Perm,
 		)
@@ -37,7 +43,7 @@ func GenerateDebugFiles(epub book.Epub) {
 		// HTML
 		//
 		err = os.WriteFile(
-			file.GetOutputPath(k, consts.OutputFolderName, v.ID, "html"),
+			file.GetOutputPath(k, file.DebugDir(epub.Name), v.ID, "html"),
 			[]byte(v.HtmlContent),
 			consts.Perm,
 		)

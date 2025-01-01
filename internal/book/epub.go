@@ -7,6 +7,7 @@ type EpubSection struct {
 }
 
 type Epub struct {
+	Name     string
 	Toc      map[string]string
 	Sections []EpubSection
 }
