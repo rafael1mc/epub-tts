@@ -59,6 +59,11 @@ func (t TTS) Run() {
 	os.RemoveAll(consts.TmpOutputFolderName)
 }
 
+func (t TTS) Speak(text string) {
+	cmd := fmt.Sprintf(`say "%s"`, text)
+	exec.Command("/bin/sh", "-c", cmd).Output()
+}
+
 func (t TTS) launchWorkers(jobInputChan <-chan job, jobDoneChan chan<- *jobError) {
 	fmt.Println("Launching", t.workerCount, "worker(s)")
 	for k := range t.workerCount {

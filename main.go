@@ -33,5 +33,8 @@ func main() {
 	tts := tts.NewTTS(3, textBook)
 	tts.Run()
 
+	if consts.SpeakProcessCompletion {
+		tts.Speak("TTS completed")
+	}
 	fmt.Println(" ---== Execution ended ==--- ")
 }
