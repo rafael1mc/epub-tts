@@ -30,7 +30,7 @@ func main() {
 	}
 	debug.GenerateDebugFiles(epub)
 
-	tts := tts.NewTTS(5, textBook)
+	tts := tts.NewTTS(3, textBook)
 	tts.Run()
 
 	if consts.SpeakProcessCompletion {

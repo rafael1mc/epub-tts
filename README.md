@@ -33,10 +33,12 @@ go run .
  - [x] Extract chapter info
  - [ ] Add more sample ePUBs
  - [ ] Add automated tests
- - [ ] Add multiple input (separate output by folder same name as input file)
+ - [x] Separate output by folder
+ - [ ] Handle multiple input
  - [ ] Organize the code some more
  - [ ] Support other languages beyond english
  - [ ] Display progress
+ - [ ] Break down a big section to be TTS concurrently, and merge after whole section is done
  - [ ] Add support for Ubuntu TTS
  - [ ] Add Web UI to Drag and Drop epub files
  - [ ] ?

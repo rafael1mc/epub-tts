@@ -82,6 +82,8 @@ func (t TTS) launchWorker(id int, inputChan <-chan job, doneChan chan<- jobDone)
 
 		_ = ttsChapter(i.ID, i.BookName, i.Chapter)
 		audioConvert(i.ID, i.BookName, i.Chapter)
+		// TODO: maybe already delete the aiff file here, to prevent growing then shriking
+		// some books generate GBs on aiff
 		doneChan <- jobDone{job: i} // not sending errors yet
 	}
 }
