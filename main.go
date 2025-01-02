@@ -7,10 +7,12 @@ import (
 	"epub-tts/internal/file"
 	"epub-tts/internal/tts"
 	"fmt"
+	"time"
 )
 
 func main() {
 	fmt.Println(" ---== Execution Started ==--- ")
+	startTime := time.Now()
 
 	epub, err := book.ParseEpub(consts.InputFilePath)
 	if err != nil {
@@ -36,5 +38,8 @@ func main() {
 	if consts.SpeakProcessCompletion {
 		tts.Speak(consts.SpeakCompletionMessage)
 	}
+
+	executionDuration := time.Since(startTime)
+	fmt.Println("\n⏱️ Conveted ePUB in", executionDuration.Round(time.Second))
 	fmt.Println(" ---== Execution ended ==--- ")
 }
