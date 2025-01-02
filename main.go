@@ -40,6 +40,6 @@ func main() {
 	}
 
 	executionDuration := time.Since(startTime)
-	fmt.Println("\n⏱️ Conveted ePUB in", executionDuration.Round(time.Second))
+	fmt.Println("\nConveted ePUB in", executionDuration.Round(time.Second), "⏱️")
 	fmt.Println(" ---== Execution ended ==--- ")
 }

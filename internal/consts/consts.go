@@ -11,8 +11,8 @@ const (
 	SpeakCompletionMessage = "TTS completed"
 	SpeakProcessCompletion = true // if true, will say something at the end of the process
 
-	SegmentWorkoutCount  = 10
-	MinSegmentLength     = 500 // used to tts parts of chapter simultaneously
+	SegmentWorkoutCount  = 5
+	MinSegmentLength     = 1000 // used to tts parts of chapter simultaneously
 	SegmentOrderFilename = "-segment-order.txt"
 )
 
