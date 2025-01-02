@@ -70,7 +70,7 @@ func CreateOutputDirs(bookName string) error {
 func SaveChapters(textBook book.TextBook) error {
 	fmt.Println("Saving chapter text files.")
 	for k, v := range textBook.Chapters {
-		filename := GetTextfileName(k, textBook.Name, v)
+		filename := GetTextFilename(k, textBook.Name, v)
 		err := os.WriteFile(
 			filename,
 			[]byte(v.Content),
@@ -84,16 +84,60 @@ func SaveChapters(textBook book.TextBook) error {
 	return nil
 }
 
-func GetTextfileName(pos int, bookName string, chapter book.Chapter) string {
-	return GetOutputPath(pos, txtDir(bookName), chapter.NameOrID(), "txt")
+// TODO: All of these get filename functions are a mess. Refactor
+
+func GetTextFilename(pos int, bookName string, chapter book.Chapter) string {
+	return strings.Trim(
+		GetOutputPath(pos, txtDir(bookName), chapter.NameOrID(), "txt"),
+		".",
+	)
 }
 
-func GetTtsAudioFilename(pos int, bookName string, chapter book.Chapter) string {
-	return GetOutputPath(pos, TmpDir(bookName), chapter.NameOrID(), "aiff")
+func GetChapterDirName(pos int, bookName string, chapter book.Chapter) string {
+	return strings.Trim(
+		GetOutputPath(pos, TmpDir(bookName), chapter.NameOrID(), ""),
+		".",
+	)
 }
 
-func GetConvertedAudioFilename(pos int, bookName string, chapter book.Chapter) string {
-	return GetOutputPath(pos, rootDir(bookName), chapter.NameOrID(), "mp3")
+func GetSegmentTextFilename(pos int, sectionOrder int, bookName string, chapter book.Chapter) string {
+	segmentPrefix := GetChapterDirName(pos, bookName, chapter)
+	return strings.Trim(
+		GetOutputPath(sectionOrder, segmentPrefix, fmt.Sprintf("%d", sectionOrder), "txt"),
+		".",
+	)
+}
+
+func GetSegmentAiffFilename(pos int, sectionOrder int, bookName string, chapter book.Chapter) string {
+	segmentPrefix := GetChapterDirName(pos, bookName, chapter)
+	return strings.Trim(
+		GetOutputPath(sectionOrder, segmentPrefix, fmt.Sprintf("%d", sectionOrder), "aiff"),
+		".",
+	)
+}
+
+func GetSegmentMp3Filename(pos int, sectionOrder int, bookName string, chapter book.Chapter) string {
+	segmentPrefix := GetChapterDirName(pos, bookName, chapter)
+	return strings.Trim(
+		GetOutputPath(sectionOrder, segmentPrefix, fmt.Sprintf("%d", sectionOrder), "mp3"),
+		".",
+	)
+}
+
+func GetSegmentOrderfilename(pos int, bookName string, chapter book.Chapter) string {
+	segmentPrefix := GetChapterDirName(pos, bookName, chapter)
+	return strings.Trim(
+		GetOutputPath(0, segmentPrefix, consts.SegmentOrderFilename, ""),
+		".",
+	)
+}
+
+// func GetConvertedAudioFilename(
+func GetFullChapterFilename(pos int, bookName string, chapter book.Chapter) string {
+	return strings.Trim(
+		GetOutputPath(pos, rootDir(bookName), chapter.NameOrID(), "mp3"),
+		".",
+	)
 }
 
 func GetOutputPath(pos int, outputFolder string, name string, extension string) string {

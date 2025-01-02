@@ -30,11 +30,11 @@ func main() {
 	}
 	debug.GenerateDebugFiles(epub)
 
-	tts := tts.NewTTS(3, textBook)
+	tts := tts.NewTTS(textBook)
 	tts.Run()
 
 	if consts.SpeakProcessCompletion {
-		tts.Speak("TTS completed")
+		tts.Speak(consts.SpeakCompletionMessage)
 	}
 	fmt.Println(" ---== Execution ended ==--- ")
 }

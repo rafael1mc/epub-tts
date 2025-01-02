@@ -4,14 +4,15 @@ import (
 	"epub-tts/internal/book"
 	"epub-tts/internal/consts"
 	"epub-tts/internal/file"
+	"epub-tts/internal/pool"
+	"epub-tts/internal/str"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 )
 
 type TTS struct {
-	workerCount int
-
 	textBook book.TextBook
 }
 
@@ -21,43 +22,76 @@ type job struct {
 	Chapter  book.Chapter
 }
 
-type jobDone struct {
-	job
-	Error error
-}
-
 func NewTTS(
-	workerCount int,
 	textBook book.TextBook,
 ) *TTS {
 	return &TTS{
-		workerCount: workerCount,
-		textBook:    textBook,
+		textBook: textBook,
 	}
 }
 
 func (t TTS) Run() {
+	if consts.IsDryRun {
+		fmt.Println("DryRun -> Skipping text-to-speech")
+		return
+	}
 	fmt.Println("Running text-to-speech")
 
-	jobCount := len(t.textBook.Chapters)
-	jobInputChan := make(chan job, jobCount)
-	jobDoneChan := make(chan jobDone, jobCount)
-
-	t.launchWorkers(jobInputChan, jobDoneChan)
-
-	for k, v := range t.textBook.Chapters {
-		jobInputChan <- job{ID: k, BookName: t.textBook.Name, Chapter: v}
-	}
-	close(jobInputChan)
-
-	for range jobCount {
-		jobDone := <-jobDoneChan
-		if jobDone.Error != nil {
-			fmt.Println("Failed to process item", jobDone.Chapter.Name, "with error", jobDone.Error)
+	workerPool := pool.NewPool[job](consts.SegmentWorkoutCount)
+	for k, chapter := range t.textBook.Chapters {
+		// create chapter folder inside tmp
+		chapterDirName := file.GetChapterDirName(k, t.textBook.Name, chapter)
+		err := os.MkdirAll(chapterDirName, consts.Perm)
+		if err != nil {
+			fmt.Println("Failed to create chapter directory with error:", err)
+			continue
 		}
-	}
 
-	os.RemoveAll(file.TmpDir(t.textBook.Name))
+		// add segment file to be used by ffmpeg when merging
+		segments := str.SplitAfterN(chapter.Content, '.', consts.MinSegmentLength)
+		orderFileContent := ""
+		for j := range segments {
+			segmentMp3Name := path.Base(file.GetSegmentMp3Filename(k, j, t.textBook.Name, chapter))
+			orderFileContent += "file " + segmentMp3Name + "\n"
+		}
+		segmentOrderFile := file.GetSegmentOrderfilename(k, t.textBook.Name, chapter)
+		err = os.WriteFile(
+			segmentOrderFile,
+			[]byte(orderFileContent),
+			consts.Perm,
+		)
+		if err != nil {
+			fmt.Println("Failed to create segment order file with error:", err)
+			continue
+		}
+
+		for j, segment := range segments {
+			workerPool.AddWork(func() {
+				// create txt for each segment
+				segmentTextName := file.GetSegmentTextFilename(k, j, t.textBook.Name, chapter)
+				err := os.WriteFile(segmentTextName, []byte(segment), consts.Perm)
+				if err != nil {
+					fmt.Println("Failed to create segment file with error:", err)
+					return
+				}
+
+				// generate audio for each segment
+				segmentAiffName := file.GetSegmentAiffFilename(k, j, t.textBook.Name, chapter)
+				segmentMp3Name := file.GetSegmentMp3Filename(k, j, t.textBook.Name, chapter)
+				ttsFile(segmentTextName, segmentAiffName)
+				convertAudio(segmentAiffName, segmentMp3Name)
+			})
+		}
+		workerPool.Start() // will wait
+		chapterFilename := file.GetFullChapterFilename(k, t.textBook.Name, chapter)
+		mergeChapter(segmentOrderFile, chapterFilename)
+
+		err = os.RemoveAll(chapterDirName)
+		if err != nil {
+			fmt.Println("failed to remove chapter dir with error:", err)
+		}
+		fmt.Println("✅ Chapter '" + path.Base(chapterDirName) + "' completed ✅")
+	}
 }
 
 func (t TTS) Speak(text string) {
@@ -65,47 +99,21 @@ func (t TTS) Speak(text string) {
 	exec.Command("/bin/sh", "-c", cmd).Output()
 }
 
-func (t TTS) launchWorkers(jobInputChan <-chan job, jobDoneChan chan<- jobDone) {
-	fmt.Println("Launching", t.workerCount, "worker(s)")
-	for k := range t.workerCount {
-		go t.launchWorker(k, jobInputChan, jobDoneChan)
-	}
+func ttsFile(inputPath string, outputPath string) {
+	fmt.Println("🎤 Narrating: '" + path.Base(inputPath) + "' 🎤")
+	cmdStr := fmt.Sprintf(`say -f "%s" -o "%s"`, inputPath, outputPath)
+	exec.Command("/bin/sh", "-c", cmdStr).Output()
 }
 
-func (t TTS) launchWorker(id int, inputChan <-chan job, doneChan chan<- jobDone) {
-	// TODO: use worker id and doneChan with error
-	for i := range inputChan {
-		if consts.IsDryRun {
-			doneChan <- jobDone{job: i}
-			continue
-		}
-
-		_ = ttsChapter(i.ID, i.BookName, i.Chapter)
-		audioConvert(i.ID, i.BookName, i.Chapter)
-		// TODO: maybe already delete the aiff file here, to prevent growing then shriking
-		// some books generate GBs on aiff
-		doneChan <- jobDone{job: i} // not sending errors yet
-	}
+func convertAudio(inputPath, outputPath string) {
+	fmt.Println("🔄 Converting: '" + path.Base(inputPath) + "' 🔄")
+	cmdStr := fmt.Sprintf(`ffmpeg -y -i %s %s`, inputPath, outputPath)
+	exec.Command("/bin/sh", "-c", cmdStr).Output()
+	fmt.Println("✓ Converted: '" + path.Base(outputPath) + "' ✓")
 }
 
-func ttsChapter(pos int, bookName string, chapter book.Chapter) string {
-	audioName := file.GetTtsAudioFilename(pos, bookName, chapter)
-
-	fmt.Println("🎤 Narrating chapter: '" + audioName + "' 🎤")
-	cmdStr := fmt.Sprintf(`say -f "%s" -o "%s"`, file.GetTextfileName(pos, bookName, chapter), audioName)
-	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
-
-	return string(out)
-}
-
-func audioConvert(pos int, bookName string, chapter book.Chapter) string {
-	ttsAudioName := file.GetTtsAudioFilename(pos, bookName, chapter)
-	convertedAudioName := file.GetConvertedAudioFilename(pos, bookName, chapter)
-
-	fmt.Println("🔄 Converting chapter: '" + ttsAudioName + "' 🔄")
-	cmdStr := fmt.Sprintf(`ffmpeg -y -i %s %s`, ttsAudioName, convertedAudioName)
-	out, _ := exec.Command("/bin/sh", "-c", cmdStr).Output()
-
-	fmt.Println("✅ Chapter '" + convertedAudioName + "' converted ✅")
-	return string(out)
+func mergeChapter(orderPath string, outputPath string) {
+	fmt.Println("📦 Merging '" + path.Base(outputPath) + "' 📦")
+	cmdStr := fmt.Sprintf(`ffmpeg -y -f concat -safe 0 -i %s -c copy %s`, orderPath, outputPath)
+	exec.Command("/bin/sh", "-c", cmdStr).Output()
 }

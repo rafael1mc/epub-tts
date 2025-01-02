@@ -77,3 +77,35 @@ func RemoveTags(input string) string {
 	// Replace all occurrences of the tag pattern with an empty string
 	return tagRegex.ReplaceAllString(input, "")
 }
+
+// SplitAfterN will find the next 'divider' after 'n' characeters in 'text'
+// Ex: "Oh well. This is a small sentence. This is a bigger sentence. This is the final sentence."
+// SplitAfterN(text, '.', 10)
+// will return return
+// ["Oh well. This is a smaller sentence.", " This is a bigger sentence.", " This is the final sentence"]
+// Because that's where '.' appears after 10 characters, cyclically
+// If 'divider' happens exactly at 'n', the split will also happen
+func SplitAfterN(text string, divider rune, n int) []string {
+	items := []string{}
+	lookingForDivider := false
+	substr := ""
+	for i, v := range text {
+		substr += string(v)
+		if (i+1)%n == 0 {
+			lookingForDivider = true
+		}
+
+		if lookingForDivider && v == divider { // waiting for at least n letters to pass
+			lookingForDivider = false
+			items = append(items, substr)
+			substr = ""
+		}
+	}
+	items = append(items, substr)
+
+	// remove last item if string ends exactly at Nth divider
+	if len(items) > 0 && items[len(items)-1] == "" {
+		items = append([]string{}, items[:len(items)-1]...)
+	}
+	return items
+}

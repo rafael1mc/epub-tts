@@ -138,6 +138,7 @@ func ParseEpub(epubPath string) (Epub, error) {
 
 // readContainer reads and parses the container.xml
 func readContainer(r *zip.ReadCloser) (*Container, error) {
+	// TODO: Sometimes, there is a subfolder, so need to "find" container.xml
 	content, err := readFileFromZip(r, "META-INF/container.xml")
 	if err != nil {
 		return nil, err
